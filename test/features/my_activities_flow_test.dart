@@ -57,7 +57,7 @@ void main() {
       expect(await world.activitiesOf(Fixture.mira.id), hasLength(6));
       expect(find.byType(ActivityTile), findsNWidgets(6));
       expect(
-        find.text('${Fixture.miraSeasonPoints} ${AppStrings.pointsShort}'),
+        find.text('${Fixture.miraChallengePoints} ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
     });
@@ -113,8 +113,8 @@ void main() {
       await settle(tester);
 
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints - 3}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints - 3}',
       );
       expect(
         _statValue(tester, AppStrings.dashboardWeekPoints),
@@ -133,8 +133,8 @@ void main() {
       await settle(tester);
 
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints - 2}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints - 2}',
       );
       expect(
         _statValue(tester, AppStrings.dashboardWeekPoints),
@@ -150,7 +150,7 @@ void main() {
       await settle(tester);
       expect(
         _leaderboardPoints(tester, Fixture.mira.name),
-        Fixture.miraSeasonPoints,
+        Fixture.miraChallengePoints,
       );
 
       await tester.tap(find.text(AppStrings.navActivities));
@@ -162,16 +162,16 @@ void main() {
 
       expect(
         _leaderboardPoints(tester, Fixture.mira.name),
-        Fixture.miraSeasonPoints - 3,
+        Fixture.miraChallengePoints - 3,
       );
       // Nobody else moved.
       expect(
         _leaderboardPoints(tester, Fixture.ben.name),
-        Fixture.benSeasonPoints,
+        Fixture.benChallengePoints,
       );
       expect(
         _leaderboardPoints(tester, Fixture.cleo.name),
-        Fixture.cleoSeasonPoints,
+        Fixture.cleoChallengePoints,
       );
     });
 
