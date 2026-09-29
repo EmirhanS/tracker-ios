@@ -64,26 +64,26 @@ class ScriptedActivityRepository implements ActivityRepository {
   Future<List<Activity>> getAll() async => List<Activity>.of(_items);
 
   @override
-  Future<List<Activity>> getForSeason(String seasonId) async => _items
-      .where((activity) => activity.seasonId == seasonId)
+  Future<List<Activity>> getForChallenge(String challengeId) async => _items
+      .where((activity) => activity.challengeId == challengeId)
       .toList(growable: false);
 
   @override
   Future<List<Activity>> getForPlayer({
     required String playerId,
-    required String seasonId,
+    required String challengeId,
   }) async =>
       _items
           .where(
             (activity) =>
-                activity.playerId == playerId && activity.seasonId == seasonId,
+                activity.playerId == playerId && activity.challengeId == challengeId,
           )
           .toList(growable: false);
 
   @override
   Future<Activity> log({
     required String playerId,
-    required String seasonId,
+    required String challengeId,
     required ScoringRule rule,
     required DateTime date,
     required ActivityInput input,

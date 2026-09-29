@@ -23,26 +23,26 @@ class InMemoryActivityRepository implements ActivityRepository {
   Future<List<Activity>> getAll() async => _store.items;
 
   @override
-  Future<List<Activity>> getForSeason(String seasonId) async => _store.items
-      .where((activity) => activity.seasonId == seasonId)
+  Future<List<Activity>> getForChallenge(String challengeId) async => _store.items
+      .where((activity) => activity.challengeId == challengeId)
       .toList(growable: false);
 
   @override
   Future<List<Activity>> getForPlayer({
     required String playerId,
-    required String seasonId,
+    required String challengeId,
   }) async =>
       _store.items
           .where(
             (activity) =>
-                activity.playerId == playerId && activity.seasonId == seasonId,
+                activity.playerId == playerId && activity.challengeId == challengeId,
           )
           .toList(growable: false);
 
   @override
   Future<Activity> log({
     required String playerId,
-    required String seasonId,
+    required String challengeId,
     required ScoringRule rule,
     required DateTime date,
     required ActivityInput input,
@@ -61,7 +61,7 @@ class InMemoryActivityRepository implements ActivityRepository {
     final activity = Activity(
       id: _ids.next('activity'),
       playerId: playerId,
-      seasonId: seasonId,
+      challengeId: challengeId,
       ruleId: rule.id,
       ruleName: rule.name,
       ruleEmoji: rule.emoji,

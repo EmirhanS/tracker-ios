@@ -29,7 +29,7 @@ class Activity {
   const Activity({
     required this.id,
     required this.playerId,
-    required this.seasonId,
+    required this.challengeId,
     required this.ruleId,
     required this.ruleName,
     required this.date,
@@ -43,7 +43,7 @@ class Activity {
 
   final String id;
   final String playerId;
-  final String seasonId;
+  final String challengeId;
 
   /// The rule this was logged against, as it was at log time.
   final String ruleId;
@@ -68,7 +68,7 @@ class Activity {
   Activity copyWith({
     String? id,
     String? playerId,
-    String? seasonId,
+    String? challengeId,
     String? ruleId,
     String? ruleName,
     String? ruleEmoji,
@@ -82,7 +82,7 @@ class Activity {
     return Activity(
       id: id ?? this.id,
       playerId: playerId ?? this.playerId,
-      seasonId: seasonId ?? this.seasonId,
+      challengeId: challengeId ?? this.challengeId,
       ruleId: ruleId ?? this.ruleId,
       ruleName: ruleName ?? this.ruleName,
       ruleEmoji: ruleEmoji ?? this.ruleEmoji,
