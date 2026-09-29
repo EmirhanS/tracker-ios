@@ -13,12 +13,14 @@ import '../../core/widgets/empty_state.dart';
 import '../../data/providers.dart';
 import '../../domain/models/activity.dart';
 import '../../domain/models/scoring_rule.dart';
-import '../../domain/models/season.dart';
+import '../../domain/models/challenge.dart';
 import '../../domain/points/points_engine.dart';
-import '../season/season_setup_providers.dart';
+import '../challenge/challenge_setup_providers.dart';
+import '../challenge/challenge_switcher.dart';
+import '../challenge/current_challenge_provider.dart';
 import '../session/current_player_provider.dart';
 
-/// Logs one activity against a rule of the running season.
+/// Logs one activity against a rule of the running challenge.
 ///
 /// The form shows only the inputs the chosen rule needs, and works the points
 /// out live with the same [PointsEngine] the repository uses when it saves.
@@ -27,40 +29,43 @@ class LogActivityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final season = ref.watch(activeSeasonProvider);
+    final challenge = ref.watch(currentChallengeProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.logTitle)),
-      body: AsyncView<Season?>(
-        value: season,
-        builder: (context, season) {
-          if (season == null) return const _NoSeason();
-          if (season.enabledRules.isEmpty) return const _NoRules();
+      appBar: AppBar(
+        title: const Text(AppStrings.logTitle),
+        actions: const [ChallengeSwitcherButton()],
+      ),
+      body: AsyncView<Challenge?>(
+        value: challenge,
+        builder: (context, challenge) {
+          if (challenge == null) return const _NoChallenge();
+          if (challenge.enabledRules.isEmpty) return const _NoRules();
 
-          // A new key per season resets the form if the season changes.
-          return _LogForm(season: season, key: ValueKey(season.id));
+          // A new key per challenge resets the form if the challenge changes.
+          return _LogForm(challenge: challenge, key: ValueKey(challenge.id));
         },
       ),
     );
   }
 }
 
-class _NoSeason extends ConsumerWidget {
-  const _NoSeason();
+class _NoChallenge extends ConsumerWidget {
+  const _NoChallenge();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isCaptain = ref.watch(isCaptainProvider);
-    final setupRoute = ref.watch(seasonSetupRouteProvider);
+    final isOwner = ref.watch(isOwnerProvider);
+    final setupRoute = ref.watch(challengeSetupRouteProvider);
 
     return EmptyState(
       icon: Icons.event_busy,
-      title: AppStrings.dashboardNoSeasonTitle,
-      body: isCaptain
-          ? AppStrings.dashboardNoSeasonCaptainBody
-          : AppStrings.dashboardNoSeasonBody,
-      actionLabel: isCaptain ? AppStrings.dashboardSetUpSeason : null,
-      onAction: isCaptain ? () => context.push(setupRoute) : null,
+      title: AppStrings.dashboardNoChallengeTitle,
+      body: isOwner
+          ? AppStrings.dashboardNoChallengeOwnerBody
+          : AppStrings.dashboardNoChallengeBody,
+      actionLabel: isOwner ? AppStrings.dashboardSetUpChallenge : null,
+      onAction: isOwner ? () => context.push(setupRoute) : null,
     );
   }
 }
@@ -79,9 +84,9 @@ class _NoRules extends StatelessWidget {
 }
 
 class _LogForm extends ConsumerStatefulWidget {
-  const _LogForm({super.key, required this.season});
+  const _LogForm({super.key, required this.challenge});
 
-  final Season season;
+  final Challenge challenge;
 
   @override
   ConsumerState<_LogForm> createState() => _LogFormState();
@@ -100,7 +105,7 @@ class _LogFormState extends ConsumerState<_LogForm> {
   void initState() {
     super.initState();
     _date = AppDates.dayOf(ref.read(clockProvider)());
-    final rules = widget.season.enabledRules;
+    final rules = widget.challenge.enabledRules;
     _rule = rules.isEmpty ? null : rules.first;
   }
 
@@ -140,8 +145,8 @@ class _LogFormState extends ConsumerState<_LogForm> {
   String? get _dateError {
     final today = AppDates.dayOf(ref.read(clockProvider)());
     if (_date.isAfter(today)) return AppStrings.logDateInFuture;
-    if (!widget.season.containsDate(_date)) {
-      return AppStrings.logDateOutsideSeason;
+    if (!widget.challenge.containsDate(_date)) {
+      return AppStrings.logDateOutsideChallenge;
     }
     return null;
   }
@@ -161,20 +166,20 @@ class _LogFormState extends ConsumerState<_LogForm> {
 
   Future<void> _pickDate() async {
     final today = AppDates.dayOf(ref.read(clockProvider)());
-    final season = widget.season;
-    final first = AppDates.dayOf(season.startDate);
-    final last = today.isBefore(season.endDate)
+    final challenge = widget.challenge;
+    final first = AppDates.dayOf(challenge.startDate);
+    final last = today.isBefore(challenge.endDate)
         ? today
-        : AppDates.dayOf(season.endDate);
+        : AppDates.dayOf(challenge.endDate);
 
-    // A season that has not begun yet leaves no day that can be picked. The
-    // date field already says the date is outside the season, so stop here
+    // A challenge that has not begun yet leaves no day that can be picked. The
+    // date field already says the date is outside the challenge, so stop here
     // rather than hand showDatePicker a range it asserts on.
     if (last.isBefore(first)) return;
 
     final picked = await showDatePicker(
       context: context,
-      // _date is today, which is outside the range for a season that has
+      // _date is today, which is outside the range for a challenge that has
       // already ended.
       initialDate: _date.isBefore(first)
           ? first
@@ -194,7 +199,7 @@ class _LogFormState extends ConsumerState<_LogForm> {
     try {
       await ref.read(activityRepositoryProvider).log(
             playerId: player.id,
-            seasonId: widget.season.id,
+            challengeId: widget.challenge.id,
             rule: rule,
             date: _date,
             input: _input,
@@ -228,7 +233,7 @@ class _LogFormState extends ConsumerState<_LogForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final rules = widget.season.enabledRules;
+    final rules = widget.challenge.enabledRules;
     final rule = _rule;
     final now = ref.watch(nowProvider);
 
