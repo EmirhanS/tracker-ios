@@ -11,29 +11,31 @@ import '../../core/widgets/activity_tile.dart';
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/points_chip.dart';
-import '../../data/providers.dart';
 import '../../domain/models/activity.dart';
-import '../../domain/models/season.dart';
+import '../../domain/models/challenge.dart';
+import '../challenge/challenge_setup_providers.dart';
+import '../challenge/challenge_switcher.dart';
+import '../challenge/current_challenge_provider.dart';
 import '../my_activities/my_activities_provider.dart';
-import '../season/season_setup_providers.dart';
 import '../session/current_player_provider.dart';
 
 /// How many recent activities the dashboard shows.
 const int _recentCount = 5;
 
-/// Season points, points this week, and the newest activities.
+/// Challenge points, points this week, and the newest activities.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final player = ref.watch(currentPlayerProvider);
-    final season = ref.watch(activeSeasonProvider);
+    final challenge = ref.watch(currentChallengeProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.dashboardTitle),
         actions: [
+          const ChallengeSwitcherButton(),
           IconButton(
             tooltip: AppStrings.scoringRulesTitle,
             icon: const Icon(Icons.rule),
@@ -47,49 +49,49 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: AsyncView<Season?>(
-        value: season,
-        builder: (context, season) {
-          if (season == null) return const _NoSeason();
-          return _Dashboard(season: season, playerName: player?.name ?? '');
+      body: AsyncView<Challenge?>(
+        value: challenge,
+        builder: (context, challenge) {
+          if (challenge == null) return const _NoChallenge();
+          return _Dashboard(challenge: challenge, playerName: player?.name ?? '');
         },
       ),
     );
   }
 }
 
-/// Shown when no season is running. The captain also gets a setup button.
-class _NoSeason extends ConsumerWidget {
-  const _NoSeason();
+/// Shown when no challenge is running. The owner also gets a setup button.
+class _NoChallenge extends ConsumerWidget {
+  const _NoChallenge();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isCaptain = ref.watch(isCaptainProvider);
-    final setupRoute = ref.watch(seasonSetupRouteProvider);
+    final isOwner = ref.watch(isOwnerProvider);
+    final setupRoute = ref.watch(challengeSetupRouteProvider);
 
     return EmptyState(
       icon: Icons.event_busy,
-      title: AppStrings.dashboardNoSeasonTitle,
-      body: isCaptain
-          ? AppStrings.dashboardNoSeasonCaptainBody
-          : AppStrings.dashboardNoSeasonBody,
-      actionLabel: isCaptain ? AppStrings.dashboardSetUpSeason : null,
-      onAction: isCaptain ? () => context.push(setupRoute) : null,
+      title: AppStrings.dashboardNoChallengeTitle,
+      body: isOwner
+          ? AppStrings.dashboardNoChallengeOwnerBody
+          : AppStrings.dashboardNoChallengeBody,
+      actionLabel: isOwner ? AppStrings.dashboardSetUpChallenge : null,
+      onAction: isOwner ? () => context.push(setupRoute) : null,
     );
   }
 }
 
 class _Dashboard extends ConsumerWidget {
-  const _Dashboard({required this.season, required this.playerName});
+  const _Dashboard({required this.challenge, required this.playerName});
 
-  final Season season;
+  final Challenge challenge;
   final String playerName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final now = ref.watch(nowProvider);
-    final seasonPoints = ref.watch(mySeasonPointsProvider);
+    final challengePoints = ref.watch(myChallengePointsProvider);
     final weekPoints = ref.watch(myWeekPointsProvider);
     final mine = ref.watch(myActivitiesProvider);
 
@@ -102,14 +104,14 @@ class _Dashboard extends ConsumerWidget {
       ),
       children: [
         Text(
-          playerName.isEmpty ? season.name : 'Hi $playerName',
+          playerName.isEmpty ? challenge.name : 'Hi $playerName',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '${season.name} · ${AppDates.dateRange(season.startDate, season.endDate)}',
+          '${challenge.name} · ${AppDates.dateRange(challenge.startDate, challenge.endDate)}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -119,8 +121,8 @@ class _Dashboard extends ConsumerWidget {
           children: [
             Expanded(
               child: _PointsTile(
-                label: AppStrings.dashboardSeasonPoints,
-                points: seasonPoints,
+                label: AppStrings.dashboardChallengePoints,
+                points: challengePoints,
                 icon: Icons.emoji_events_outlined,
               ),
             ),
