@@ -1,8 +1,8 @@
 # SportTracker
 
 A gamified training tracker for amateur sports teams. Players log workouts and
-team activities, earn points from the active season's scoring rules, and compete
-on a leaderboard.
+team activities, earn points from a challenge's scoring rules, and compete on a
+leaderboard.
 
 This is **v1**. It has no backend: all data is held in memory and seeded with
 sample data on start. The data layer sits behind repository interfaces so a
@@ -53,7 +53,6 @@ LOCALAPPDATA="$USERPROFILE\\AppData\\Local" flutter test
 | --------------- | ----------------------------------------------------------- |
 | `lib/core`      | Router, strings, theme, shared widgets                      |
 | `lib/domain`    | Plain Dart models, points engine, validators, templates     |
-| `lib/data`      | Repository interfaces, in-memory implementations, providers |
 | `lib/features`  | One folder per screen or flow                               |
 | `test/`         | Unit tests for the domain and the data layer                |
 
