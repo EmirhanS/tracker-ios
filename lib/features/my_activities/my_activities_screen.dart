@@ -11,9 +11,10 @@ import '../../core/widgets/async_view.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../data/providers.dart';
 import '../../domain/models/activity.dart';
+import '../challenge/challenge_switcher.dart';
 import 'my_activities_provider.dart';
 
-/// Everything the current player has logged this season, newest first.
+/// Everything the current player has logged this challenge, newest first.
 ///
 /// Swiping a row left deletes it. Points are stored on the activity, so the
 /// totals drop by themselves.
@@ -79,12 +80,13 @@ class MyActivitiesScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final now = ref.watch(nowProvider);
     final mine = ref.watch(myActivitiesProvider);
-    final total = ref.watch(mySeasonPointsProvider);
+    final total = ref.watch(myChallengePointsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.activitiesTitle),
         actions: [
+          const ChallengeSwitcherButton(),
           // No number until there is one. A total summed from a stream that has
           // not arrived, or has failed, is not zero — and the body below is
           // already showing the spinner or the error, so the app bar only has
