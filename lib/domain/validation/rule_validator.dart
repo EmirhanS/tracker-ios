@@ -5,7 +5,7 @@ enum RuleValidationError {
   /// The name is empty or only spaces.
   nameRequired,
 
-  /// Another rule in the season already has this name.
+  /// Another rule in the challenge already has this name.
   nameNotUnique,
 
   /// A points value is outside 0 to 100.
@@ -38,11 +38,11 @@ enum RuleValidationError {
 const int minRulePoints = 0;
 const int maxRulePoints = 100;
 
-/// Checks that one scoring rule makes sense on its own and inside its season.
+/// Checks that one scoring rule makes sense on its own and inside its challenge.
 abstract final class RuleValidator {
   /// Returns every problem with [rule]. An empty list means the rule is good.
   ///
-  /// [otherRules] are the rules the season already has, not counting [rule]
+  /// [otherRules] are the rules the challenge already has, not counting [rule]
   /// itself. They are used for the name uniqueness check.
   static List<RuleValidationError> validate(
     ScoringRule rule, {
