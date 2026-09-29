@@ -34,7 +34,7 @@ void main() {
       await settle(tester);
 
       expect(find.byType(StatTile), findsNWidgets(2));
-      expect(find.text('${Fixture.miraSeasonPoints}'), findsOneWidget);
+      expect(find.text('${Fixture.miraChallengePoints}'), findsOneWidget);
       expect(find.text('${Fixture.miraWeekPoints}'), findsOneWidget);
     });
 
@@ -93,7 +93,7 @@ void main() {
     });
   });
 
-  group('The My activities season total in the app bar', () {
+  group('The My activities challenge total in the app bar', () {
     testWidgets('stays blank until there is a number', (tester) async {
       final repository = await pumpScripted(
         tester,
@@ -109,7 +109,7 @@ void main() {
       await settle(tester);
 
       expect(
-        find.text('${Fixture.miraSeasonPoints} ${AppStrings.pointsShort}'),
+        find.text('${Fixture.miraChallengePoints} ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
     });

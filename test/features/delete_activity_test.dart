@@ -67,7 +67,7 @@ void main() {
       expect(find.text(AppStrings.activitiesDeleted), findsOneWidget);
     });
 
-    testWidgets('drops the season total by exactly that many points',
+    testWidgets('drops the challenge total by exactly that many points',
         (tester) async {
       final repository = await openActivities(tester);
       final inFlight = Completer<void>();
@@ -77,7 +77,7 @@ void main() {
 
       // Still the full total: nothing has actually gone yet.
       expect(
-        find.text('${Fixture.miraSeasonPoints} ${AppStrings.pointsShort}'),
+        find.text('${Fixture.miraChallengePoints} ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
 
@@ -85,7 +85,7 @@ void main() {
       await settle(tester);
 
       expect(
-        find.text('${Fixture.miraSeasonPoints - 3} ${AppStrings.pointsShort}'),
+        find.text('${Fixture.miraChallengePoints - 3} ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
     });
@@ -103,7 +103,7 @@ void main() {
       expect(find.text(AppStrings.activitiesDeleted), findsNothing);
       expect(find.byType(ActivityTile), findsNWidgets(6));
       expect(
-        find.text('${Fixture.miraSeasonPoints} ${AppStrings.pointsShort}'),
+        find.text('${Fixture.miraChallengePoints} ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
     });
