@@ -9,25 +9,26 @@ import '../app_harness.dart';
 /// Mia Halvorsen's seeded points, from the five entries in SeedData:
 /// Running 5.2 km (2), Gym 60 min (3), Yoga 40 min (1), Team sport 90 min (4),
 /// Running 10.4 km (4).
-const int miaSeasonPoints = 14;
+const int miaChallengePoints = 14;
 
 void main() {
   group('Dashboard', () {
-    testWidgets('shows season points and points this week', (tester) async {
+    testWidgets('shows challenge points and points this week', (tester) async {
       await pumpApp(tester);
       await signIn(tester, 'Mia Halvorsen');
 
-      expect(find.text(AppStrings.dashboardSeasonPoints), findsOneWidget);
+      expect(find.text(AppStrings.dashboardChallengePoints), findsOneWidget);
       expect(find.text(AppStrings.dashboardWeekPoints), findsOneWidget);
-      expect(find.text('$miaSeasonPoints'), findsOneWidget);
+      expect(find.text('$miaChallengePoints'), findsOneWidget);
     });
 
-    testWidgets('greets the player and names the season', (tester) async {
+    testWidgets('greets the player and names the challenge', (tester) async {
       await pumpApp(tester);
       await signIn(tester, 'Mia Halvorsen');
 
       expect(find.text('Hi Mia Halvorsen'), findsOneWidget);
-      expect(find.textContaining('Autumn 2026'), findsOneWidget);
+      // Twice: the switcher in the app bar and the line under the greeting.
+      expect(find.textContaining('Autumn 2026'), findsNWidgets(2));
     });
 
     testWidgets('lists at most five recent activities', (tester) async {
@@ -79,12 +80,12 @@ void main() {
 
       final mine = await repositories.activities.getForPlayer(
         playerId: 'player_1',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
       );
       expect(mine, hasLength(5));
       expect(find.byType(ActivityTile), findsNWidgets(5));
       expect(
-        find.text('$miaSeasonPoints ${AppStrings.pointsShort}'),
+        find.text('$miaChallengePoints ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
     });
@@ -120,13 +121,13 @@ void main() {
 
       final left = await repositories.activities.getForPlayer(
         playerId: 'player_1',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
       );
       expect(left, hasLength(4));
 
       // The newest entry was Running 5.2 km, worth 2 points.
       expect(
-        find.text('${miaSeasonPoints - 2} ${AppStrings.pointsShort}'),
+        find.text('${miaChallengePoints - 2} ${AppStrings.pointsShort}'),
         findsOneWidget,
       );
     });
@@ -142,7 +143,7 @@ void main() {
 
       expect(find.text('1'), findsOneWidget);
       expect(find.text(AppStrings.leaderboardYou), findsOneWidget);
-      expect(find.text(AppStrings.leaderboardCaptain), findsOneWidget);
+      expect(find.text(AppStrings.leaderboardOwner), findsOneWidget);
       expect(find.byType(PointsChip), findsWidgets);
     });
 
@@ -209,7 +210,7 @@ void main() {
 
       final mine = await repositories.activities.getForPlayer(
         playerId: 'player_7',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
       );
       expect(mine, hasLength(3));
       expect(mine.last.ruleName, 'Gym session');
