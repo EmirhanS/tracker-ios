@@ -1,41 +1,49 @@
 import '../../domain/models/activity.dart';
+import '../../domain/models/challenge.dart';
 import '../../domain/models/player.dart';
-import '../../domain/models/season.dart';
+import '../../domain/models/scoring_rule.dart';
 import '../../domain/points/points_engine.dart';
-import '../../domain/templates/season_templates.dart';
+import '../../domain/templates/challenge_templates.dart';
 import 'id_generator.dart';
 import 'in_memory_activity_repository.dart';
+import 'in_memory_challenge_repository.dart';
 import 'in_memory_player_repository.dart';
-import 'in_memory_season_repository.dart';
 
 /// The three repositories, built together so they agree with each other.
 class SeededRepositories {
   const SeededRepositories({
     required this.players,
-    required this.seasons,
+    required this.challenges,
     required this.activities,
   });
 
   final InMemoryPlayerRepository players;
-  final InMemorySeasonRepository seasons;
+  final InMemoryChallengeRepository challenges;
   final InMemoryActivityRepository activities;
 
   void dispose() {
     players.dispose();
-    seasons.dispose();
+    challenges.dispose();
     activities.dispose();
   }
 }
 
 /// Sample data so the app has something to show on first run.
 ///
-/// Seven players, one running season built from General Fitness, and about
-/// twenty-five activities spread over the last three weeks. Points come from
-/// [PointsEngine], the same path a real log takes, so the seeded totals and the
-/// rules always agree.
+/// Seven players and two challenges running side by side, because a player can
+/// be in more than one now: a big one everybody is in, and a small one three of
+/// them share. Points come from [PointsEngine], the same path a real log takes,
+/// so the seeded totals and the rules always agree.
 abstract final class SeedData {
-  /// The name of the seeded season.
-  static const String seasonName = 'Autumn 2026';
+  /// The name of the big seeded challenge, the one everybody is in.
+  static const String challengeName = 'Autumn 2026';
+
+  /// The name of the small seeded challenge.
+  static const String secondChallengeName = 'Gym Buddies';
+
+  /// Fixed join codes, so they can be typed in by hand while testing.
+  static const String joinCode = 'AUTUMN';
+  static const String secondJoinCode = 'GYMBUD';
 
   static const List<String> _playerNames = [
     'Mia Halvorsen',
@@ -77,11 +85,25 @@ abstract final class SeedData {
     _SeedEntry(6, 'Team sport', 9, 60, null),
   ];
 
+  /// The handful logged in the small challenge, by its three members.
+  static const List<_SeedEntry> _secondEntries = [
+    _SeedEntry(1, 'Gym session', 1, 55, null),
+    _SeedEntry(1, 'Gym session', 4, 45, null),
+    _SeedEntry(2, 'Gym session', 2, 60, null),
+    _SeedEntry(2, 'Yoga / mobility', 6, 30, null),
+    _SeedEntry(3, 'Gym session', 3, 50, null),
+    _SeedEntry(3, 'Cycling', 7, 60, null),
+  ];
+
   /// Builds the seeded repositories.
   ///
   /// [now] is injected so tests get the same data every run.
   static SeededRepositories build({DateTime? now}) {
     final today = now ?? DateTime.now();
+    // One rule counter for both challenges. Rule ids have to be unique across
+    // every challenge, because an activity stores its own `ruleId` and
+    // `Challenge.ruleById` looks it up by id alone - see the contract on
+    // `ChallengeRepository.nextRuleId`.
     final ruleIds = IdGenerator();
     final activityIds = IdGenerator();
 
@@ -90,23 +112,86 @@ abstract final class SeedData {
         Player(id: 'player_${i + 1}', name: _playerNames[i]),
     ];
 
-    final rules = SeasonTemplates.generalFitness.buildRules(
-      ruleIds.forPrefix('rule'),
-    );
-
-    final season = Season(
-      id: 'season_1',
-      name: seasonName,
+    final challenge = Challenge(
+      id: 'challenge_1',
+      name: challengeName,
       startDate: DateTime(today.year, today.month - 1, 1),
       endDate: DateTime(today.year, today.month + 2, 0),
-      captainId: players.first.id,
-      status: SeasonStatus.active,
-      rules: rules,
+      ownerId: players.first.id,
+      joinCode: joinCode,
+      memberIds: List<String>.unmodifiable(
+        players.map((player) => player.id),
+      ),
+      status: ChallengeStatus.active,
+      rules: ChallengeTemplates.generalFitness.buildRules(
+        ruleIds.forPrefix('rule'),
+      ),
     );
 
-    final activities = <Activity>[];
-    for (final entry in _entries) {
-      final rule = rules.firstWhere((rule) => rule.name == entry.ruleName);
+    // A smaller one among three of them, so the app starts with two challenges
+    // running at once. It opens on the same day as the big one, so every seeded
+    // activity falls inside whichever challenge it belongs to.
+    final second = Challenge(
+      id: 'challenge_2',
+      name: secondChallengeName,
+      startDate: DateTime(today.year, today.month - 1, 1),
+      endDate: DateTime(today.year, today.month + 1, 0),
+      ownerId: players[1].id,
+      joinCode: secondJoinCode,
+      memberIds: List<String>.unmodifiable([
+        players[1].id,
+        players[2].id,
+        players[3].id,
+      ]),
+      status: ChallengeStatus.active,
+      rules: ChallengeTemplates.generalFitness.buildRules(
+        ruleIds.forPrefix('rule'),
+      ),
+    );
+
+    final activities = <Activity>[
+      ..._score(
+        entries: _entries,
+        challenge: challenge,
+        players: players,
+        today: today,
+        ids: activityIds,
+      ),
+      ..._score(
+        entries: _secondEntries,
+        challenge: second,
+        players: players,
+        today: today,
+        ids: activityIds,
+      ),
+    ];
+
+    return SeededRepositories(
+      players: InMemoryPlayerRepository(players),
+      challenges: InMemoryChallengeRepository(
+        challenges: [challenge, second],
+        idGenerator: IdGenerator(start: 2),
+      ),
+      activities: InMemoryActivityRepository(
+        activities: activities,
+        idGenerator: activityIds,
+      ),
+    );
+  }
+
+  /// Scores [entries] into activities of [challenge].
+  static List<Activity> _score({
+    required List<_SeedEntry> entries,
+    required Challenge challenge,
+    required List<Player> players,
+    required DateTime today,
+    required IdGenerator ids,
+  }) {
+    final scored = <Activity>[];
+    for (final entry in entries) {
+      final rule = challenge.rules.firstWhere(
+        (ScoringRule rule) => rule.name == entry.ruleName,
+      );
       final input = ActivityInput(
         durationMinutes: entry.minutes,
         distanceKm: entry.km,
@@ -126,11 +211,11 @@ abstract final class SeedData {
       // DateTime normalises an out-of-range day field back into the month.
       final date = DateTime(today.year, today.month, today.day - entry.daysAgo);
 
-      activities.add(
+      scored.add(
         Activity(
-          id: activityIds.next('activity'),
+          id: ids.next('activity'),
           playerId: players[entry.playerIndex].id,
-          seasonId: season.id,
+          challengeId: challenge.id,
           ruleId: rule.id,
           ruleName: rule.name,
           ruleEmoji: rule.emoji,
@@ -142,18 +227,7 @@ abstract final class SeedData {
         ),
       );
     }
-
-    return SeededRepositories(
-      players: InMemoryPlayerRepository(players),
-      seasons: InMemorySeasonRepository(
-        seasons: [season],
-        idGenerator: IdGenerator(start: 1),
-      ),
-      activities: InMemoryActivityRepository(
-        activities: activities,
-        idGenerator: activityIds,
-      ),
-    );
+    return scored;
   }
 }
 
