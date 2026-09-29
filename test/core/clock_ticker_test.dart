@@ -8,7 +8,7 @@ import 'package:sporttracker/core/widgets/points_chip.dart';
 import 'package:sporttracker/data/in_memory/id_generator.dart';
 import 'package:sporttracker/data/in_memory/in_memory_activity_repository.dart';
 import 'package:sporttracker/data/in_memory/in_memory_player_repository.dart';
-import 'package:sporttracker/data/in_memory/in_memory_season_repository.dart';
+import 'package:sporttracker/data/in_memory/in_memory_challenge_repository.dart';
 import 'package:sporttracker/data/providers.dart';
 
 import '../app_harness.dart';
@@ -39,7 +39,7 @@ Future<void> _pumpWithClock(
   _MovableClock clock,
 ) async {
   final players = InMemoryPlayerRepository(Fixture.players);
-  final seasons = InMemorySeasonRepository(seasons: [Fixture.season()]);
+  final challenges = InMemoryChallengeRepository(challenges: [Fixture.challenge()]);
   final activities = InMemoryActivityRepository(
     activities: Fixture.activities,
     idGenerator: IdGenerator(start: Fixture.activities.length),
@@ -48,7 +48,7 @@ Future<void> _pumpWithClock(
 
   addTearDown(() {
     players.dispose();
-    seasons.dispose();
+    challenges.dispose();
     activities.dispose();
   });
 
@@ -56,7 +56,7 @@ Future<void> _pumpWithClock(
     ProviderScope(
       overrides: [
         playerRepositoryProvider.overrideWithValue(players),
-        seasonRepositoryProvider.overrideWithValue(seasons),
+        challengeRepositoryProvider.overrideWithValue(challenges),
         activityRepositoryProvider.overrideWithValue(activities),
         clockProvider.overrideWithValue(clock.call),
       ],
@@ -83,7 +83,7 @@ Future<void> _resume(WidgetTester tester) async {
 ///
 /// Mira's fixture week is Mon 5 Oct to Sun 11 Oct and holds 9 points. Nothing
 /// of hers falls in the week that starts Mon 12 Oct, so once the day turns over
-/// the week tile has to read 0 while the season total stays at 17.
+/// the week tile has to read 0 while the challenge total stays at 17.
 void main() {
   group('Midnight while the app is open', () {
     testWidgets('rolls "this week" over on its own', (tester) async {
@@ -103,8 +103,8 @@ void main() {
 
       expect(_statValue(tester, AppStrings.dashboardWeekPoints), '0');
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints}',
       );
     });
 
@@ -122,8 +122,8 @@ void main() {
         '${Fixture.miraWeekPoints}',
       );
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints}',
       );
     });
   });
@@ -146,8 +146,8 @@ void main() {
 
       expect(_statValue(tester, AppStrings.dashboardWeekPoints), '0');
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints}',
       );
     });
 
