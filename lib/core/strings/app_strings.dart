@@ -1,7 +1,7 @@
 import '../../domain/models/scoring_rule.dart';
 import '../../domain/points/points_engine.dart';
 import '../../domain/validation/rule_validator.dart';
-import '../../domain/validation/season_validator.dart';
+import '../../domain/validation/challenge_validator.dart';
 
 /// All user-facing text in the app, in English.
 ///
@@ -33,19 +33,20 @@ abstract final class AppStrings {
 
   // -------------------------------------------------------------- dashboard
   static const String dashboardTitle = 'Dashboard';
-  static const String dashboardSeasonPoints = 'Season points';
+  static const String dashboardChallengePoints = 'Challenge points';
   static const String dashboardWeekPoints = 'This week';
   static const String dashboardRecentActivities = 'Recent activities';
   static const String dashboardNoActivitiesTitle = 'No activities yet';
   static const String dashboardNoActivitiesBody =
       'Log your first workout to get on the board.';
   static const String dashboardLogActivity = 'Log activity';
-  static const String dashboardNoSeasonTitle = 'No active season';
-  static const String dashboardNoSeasonBody =
-      'A season must be running before anyone can score points.';
-  static const String dashboardNoSeasonCaptainBody =
-      'You are the captain. Set up a season to start scoring.';
-  static const String dashboardSetUpSeason = 'Set up a season';
+  static const String dashboardNoChallengeTitle = 'No active challenge';
+  static const String dashboardNoChallengeBody =
+      'A challenge must be running before anyone can score points.';
+  static const String dashboardNoChallengeOwnerBody =
+      'Set up a challenge to start scoring, then invite the others with its '
+      'join code.';
+  static const String dashboardSetUpChallenge = 'Set up a challenge';
   static const String dashboardSeeAll = 'See all';
 
   // ------------------------------------------------------------ log activity
@@ -60,10 +61,10 @@ abstract final class AppStrings {
   static const String logSubmit = 'Log activity';
   static const String logSaved = 'Activity logged.';
   static const String logNoRules =
-      'The active season has no enabled activities.';
+      'The active challenge has no enabled activities.';
   static const String logDateInFuture = 'The date cannot be in the future.';
-  static const String logDateOutsideSeason =
-      'The date is outside the active season.';
+  static const String logDateOutsideChallenge =
+      'The date is outside the active challenge.';
   static const String logDurationNotANumber =
       'Enter the duration as a whole number of minutes.';
   static const String logDistanceNotANumber =
@@ -88,71 +89,135 @@ abstract final class AppStrings {
   static const String leaderboardEmptyBody =
       'The table fills up as the team logs activities.';
   static const String leaderboardYou = 'You';
-  static const String leaderboardCaptain = 'Captain';
+  static const String leaderboardOwner = 'Owner';
 
   // ---------------------------------------------------------- scoring rules
   static const String scoringRulesTitle = 'Scoring rules';
   static const String scoringRulesEmptyTitle = 'No scoring rules';
   static const String scoringRulesEmptyBody =
-      'The captain sets the rules when the season is created.';
+      'The owner sets the rules of a challenge.';
   static const String scoringRulesDisabled = 'Off';
 
-  // ----------------------------------------------------------- season setup
-  static const String seasonNewTitle = 'New season';
-  static const String seasonName = 'Season name';
-  static const String seasonNameHint = 'For example: Autumn 2026';
-  static const String seasonStartDate = 'Start date';
-  static const String seasonEndDate = 'End date';
-  static const String seasonCreate = 'Create season';
+  /// Owner only, on the read-only rules screen of a running challenge.
+  static const String scoringRulesEdit = 'Edit rules';
 
-  static const String seasonTemplateTitle = 'Choose a template';
-  static const String seasonTemplateBody =
-      'A template fills the season with a set of scoring rules. You can change '
+  // ------------------------------------------------------------- challenges
+  static const String challengesTitle = 'Challenges';
+  static const String challengesCreate = 'Create a challenge';
+  static const String challengesJoin = 'Join with a code';
+  static const String challengesEmptyTitle = 'No challenges yet';
+  static const String challengesEmptyBody =
+      'Create one and invite your friends, or join one with a code somebody '
+      'sent you.';
+  static const String challengesOwnerMark = 'Owner';
+  static const String challengesDraftMark = 'Draft';
+  static const String challengesAll = 'All challenges';
+  static const String challengesPick = 'Choose a challenge';
+  static const String challengesNoneChosen = 'No challenge';
+
+  // ---------------------------------------------------------------- invite
+  static const String inviteTitle = 'Invite a friend';
+  static const String inviteBody =
+      'Send this code to a friend so they can join the challenge.';
+  static const String inviteCopy = 'Copy code';
+  static const String inviteCopied = 'Code copied.';
+  static const String inviteNewCode = 'New code';
+  static const String inviteNewCodeTitle = 'Make a new code?';
+  static const String inviteNewCodeBody =
+      'The old code stops working straight away, so anybody still holding it '
+      'cannot join.';
+  static const String inviteNewCodeAction = 'Yes, replace it';
+  static const String inviteDone = 'Done';
+
+  // ------------------------------------------------------------------ join
+  static const String joinTitle = 'Join with a code';
+  static const String joinCodeLabel = 'Join code';
+  static const String joinCodeHint = 'Six letters and numbers';
+  static const String joinLookUp = 'Find the challenge';
+  static const String joinNotFound =
+      'No challenge has that code. Check it and try again.';
+  static const String joinAlreadyMember = 'You are already in this challenge.';
+  static const String joinOpenInstead = 'Open it';
+  static const String joinPreviewTitle = 'Join this challenge?';
+  static const String joinConfirm = 'Join';
+  static const String joinFailed = 'Could not join that challenge. Try again.';
+  static const String joinSucceeded = 'You joined the challenge.';
+
+  // --------------------------------------------------------------- members
+  static const String membersTitle = 'Members';
+  static const String membersUnknownPlayer = 'Unknown player';
+  static const String membersRemove = 'Remove';
+  static const String membersRemoveTitle = 'Remove from the challenge?';
+  static const String membersRemoveBody =
+      'They drop off the leaderboard. They can join again with the code.';
+  static const String membersRemoveFailed =
+      'Could not remove that member. Try again.';
+  static const String membersLeave = 'Leave challenge';
+  static const String membersLeaveTitle = 'Leave this challenge?';
+  static const String membersLeaveBody =
+      'You stop scoring in it. You can join again with the code.';
+  static const String membersLeaveAction = 'Yes, leave';
+  static const String membersLeaveFailed =
+      'Could not leave that challenge. Try again.';
+
+  // ----------------------------------------------------------- challenge setup
+  static const String challengeNewTitle = 'New challenge';
+  static const String challengeName = 'Challenge name';
+  static const String challengeNameHint = 'For example: Autumn 2026';
+  static const String challengeStartDate = 'Start date';
+  static const String challengeEndDate = 'End date';
+  static const String challengeCreate = 'Create challenge';
+
+  static const String challengeTemplateTitle = 'Choose a template';
+  static const String challengeTemplateBody =
+      'A template fills the challenge with a set of scoring rules. You can change '
       'them in the next step.';
-  static const String seasonTemplateUse = 'Use this template';
+  static const String challengeTemplateUse = 'Use this template';
 
-  static const String seasonRulesTitle = 'Scoring rules';
-  static const String seasonRulesBody =
+  static const String challengeRulesTitle = 'Scoring rules';
+  static const String challengeRulesBody =
       'Turn rules off you do not want, or change how many points they give.';
-  static const String seasonRulesAdd = 'Add rule';
-  static const String seasonRulesReview = 'Review and start';
-  static const String seasonRulesNoneEnabled =
-      'Turn on at least one rule before you start the season.';
+  static const String challengeRulesAdd = 'Add rule';
+  static const String challengeRulesReview = 'Review and start';
+  static const String challengeRulesNoneEnabled =
+      'Turn on at least one rule before you start the challenge.';
 
-  static const String seasonRuleEditTitle = 'Edit rule';
-  static const String seasonRuleNewTitle = 'New rule';
-  static const String seasonRuleName = 'Rule name';
-  static const String seasonRuleEmoji = 'Emoji (optional)';
-  static const String seasonRuleEnabled = 'Rule is on';
-  static const String seasonRuleScoringType = 'Scoring type';
-  static const String seasonRuleTypeFixed = 'Fixed points';
-  static const String seasonRuleTypeTime = 'Points per time block';
-  static const String seasonRuleTypeDistance = 'Points by distance';
-  static const String seasonRulePoints = 'Points';
-  static const String seasonRuleMinDuration = 'Minimum duration (minutes)';
-  static const String seasonRuleMinDurationOptional =
+  static const String challengeRuleEditTitle = 'Edit rule';
+  static const String challengeRuleNewTitle = 'New rule';
+  static const String challengeRuleName = 'Rule name';
+  static const String challengeRuleEmoji = 'Emoji (optional)';
+  static const String challengeRuleEnabled = 'Rule is on';
+  static const String challengeRuleScoringType = 'Scoring type';
+  static const String challengeRuleTypeFixed = 'Fixed points';
+  static const String challengeRuleTypeTime = 'Points per time block';
+  static const String challengeRuleTypeDistance = 'Points by distance';
+  static const String challengeRulePoints = 'Points';
+  static const String challengeRuleMinDuration = 'Minimum duration (minutes)';
+  static const String challengeRuleMinDurationOptional =
       'Minimum duration (minutes, optional)';
-  static const String seasonRulePointsPerBlock = 'Points per block';
-  static const String seasonRuleMinutesPerBlock = 'Minutes per block';
-  static const String seasonRuleTiers = 'Distance tiers';
-  static const String seasonRuleTierAdd = 'Add tier';
-  static const String seasonRuleTierFrom = 'From (km)';
-  static const String seasonRuleTierPoints = 'Points';
-  static const String seasonRuleDelete = 'Delete rule';
+  static const String challengeRulePointsPerBlock = 'Points per block';
+  static const String challengeRuleMinutesPerBlock = 'Minutes per block';
+  static const String challengeRuleTiers = 'Distance tiers';
+  static const String challengeRuleTierAdd = 'Add tier';
+  static const String challengeRuleTierFrom = 'From (km)';
+  static const String challengeRuleTierPoints = 'Points';
+  static const String challengeRuleDelete = 'Delete rule';
 
-  static const String seasonReviewTitle = 'Review season';
-  static const String seasonReviewRules = 'Active rules';
-  static const String seasonReviewStart = 'Start season';
-  static const String seasonReviewConfirmTitle = 'Start the season?';
-  static const String seasonReviewConfirmBody =
-      'After the season starts, the scoring rules are locked. Players can log '
-      'activities right away.';
-  static const String seasonReviewConfirmAction = 'Yes, start it';
-  static const String seasonStarted = 'The season has started.';
-  static const String seasonLocked =
-      'The season is running, so its rules can no longer be changed.';
-  static const String seasonCaptainOnly =
-      'Only the team captain can set up a season.';
+  static const String challengeReviewTitle = 'Review challenge';
+  static const String challengeReviewRules = 'Active rules';
+  static const String challengeReviewStart = 'Start challenge';
+  static const String challengeReviewConfirmTitle = 'Start the challenge?';
+  static const String challengeReviewConfirmBody =
+      'After the challenge starts, its dates are fixed and players can log '
+      'activities right away. You can still change the rules.';
+  static const String challengeReviewConfirmAction = 'Yes, start it';
+  static const String challengeStarted = 'The challenge has started.';
+  static const String challengeOwnerOnly =
+      'Only the owner of a challenge can set its rules.';
+
+  /// Shown in the rules editor while the challenge is already running.
+  static const String challengeRulesLiveNote =
+      'Changes count from now on. Points already earned do not change.';
 
   // ------------------------------------------------------------------ dates
   static const String today = 'Today';
@@ -166,7 +231,7 @@ abstract final class AppStrings {
 
   /// Plain text for a points engine error.
   static String pointsError(PointsError error) => switch (error) {
-        RuleDisabled() => 'This activity is switched off for this season.',
+        RuleDisabled() => 'This activity is switched off for this challenge.',
         DurationRequired() => 'Enter how long the activity was.',
         BelowMinimumDuration(:final minimumMinutes) =>
           'This activity must last at least '
@@ -198,16 +263,16 @@ abstract final class AppStrings {
           'A longer distance cannot give fewer points.',
       };
 
-  /// Plain text for a season name or date problem.
-  static String seasonDetailsError(SeasonDetailsError error) => switch (error) {
-        SeasonDetailsError.nameRequired => 'Give the season a name.',
-        SeasonDetailsError.endNotAfterStart =>
+  /// Plain text for a challenge name or date problem.
+  static String challengeDetailsError(ChallengeDetailsError error) => switch (error) {
+        ChallengeDetailsError.nameRequired => 'Give the challenge a name.',
+        ChallengeDetailsError.endNotAfterStart =>
           'The end date must be after the start date.',
       };
 
-  /// Plain text for a reason the season cannot start.
-  static String seasonStartError(SeasonStartError error) => switch (error) {
-        NoEnabledRules() => seasonRulesNoneEnabled,
+  /// Plain text for a reason the challenge cannot start.
+  static String challengeStartError(ChallengeStartError error) => switch (error) {
+        NoEnabledRules() => challengeRulesNoneEnabled,
         InvalidRule(:final ruleName, :final errors) =>
           '$ruleName: ${errors.map(ruleError).join(' ')}',
       };
@@ -235,6 +300,21 @@ abstract final class AppStrings {
   /// "1 point" or "4 points".
   static String formatPoints(int points) =>
       points == 1 ? '1 point' : '$points points';
+
+  /// "1 member" or "7 members".
+  static String formatMembers(int members) =>
+      members == 1 ? '1 member' : '$members members';
+
+  /// "ABCDEF" read out loud as "ABC DEF".
+  ///
+  /// A code is split in halves so somebody can say it across a room without
+  /// losing their place. The gap is display only — [JoinCode.normalize] takes
+  /// it back out when the other player types it in.
+  static String groupJoinCode(String code) {
+    if (code.length < 4) return code;
+    final half = code.length ~/ 2;
+    return '${code.substring(0, half)} ${code.substring(half)}';
+  }
 
   /// A one-line summary of how a rule scores, for the rules list.
   static String describeScoring(Scoring scoring) => switch (scoring) {
