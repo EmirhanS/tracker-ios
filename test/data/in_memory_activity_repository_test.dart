@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sporttracker/data/in_memory/in_memory_activity_repository.dart';
 import 'package:sporttracker/data/in_memory/seed_data.dart';
+import 'package:sporttracker/domain/codes/join_code.dart';
 import 'package:sporttracker/domain/models/activity.dart';
 import 'package:sporttracker/domain/models/scoring_rule.dart';
 
@@ -43,7 +44,7 @@ void main() {
   }) {
     return repository.log(
       playerId: playerId,
-      seasonId: 'season_1',
+      challengeId: 'challenge_1',
       rule: gym,
       date: date ?? DateTime(2026, 9, 29),
       input: ActivityInput(durationMinutes: minutes),
@@ -76,7 +77,7 @@ void main() {
     test('scores a distance rule by tier', () async {
       final activity = await repository.log(
         playerId: 'player_1',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
         rule: running,
         date: DateTime(2026, 9, 29),
         input: const ActivityInput(distanceKm: 7.5),
@@ -98,7 +99,7 @@ void main() {
       expect(
         () => repository.log(
           playerId: 'player_1',
-          seasonId: 'season_1',
+          challengeId: 'challenge_1',
           rule: gym.copyWith(isEnabled: false),
           date: DateTime(2026, 9, 29),
           input: const ActivityInput(durationMinutes: 60),
@@ -110,7 +111,7 @@ void main() {
     test('empty notes are stored as null', () async {
       final activity = await repository.log(
         playerId: 'player_1',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
         rule: gym,
         date: DateTime(2026, 9, 29),
         input: const ActivityInput(durationMinutes: 60),
@@ -123,7 +124,7 @@ void main() {
     test('notes are trimmed', () async {
       final activity = await repository.log(
         playerId: 'player_1',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
         rule: gym,
         date: DateTime(2026, 9, 29),
         input: const ActivityInput(durationMinutes: 60),
@@ -142,28 +143,28 @@ void main() {
   });
 
   group('reads', () {
-    test('getForSeason filters by season', () async {
+    test('getForChallenge filters by challenge', () async {
       await logGym();
       await repository.log(
         playerId: 'player_1',
-        seasonId: 'season_2',
+        challengeId: 'challenge_2',
         rule: gym,
         date: DateTime(2026, 9, 29),
         input: const ActivityInput(durationMinutes: 60),
       );
 
-      expect(await repository.getForSeason('season_1'), hasLength(1));
-      expect(await repository.getForSeason('season_2'), hasLength(1));
-      expect(await repository.getForSeason('season_3'), isEmpty);
+      expect(await repository.getForChallenge('challenge_1'), hasLength(1));
+      expect(await repository.getForChallenge('challenge_2'), hasLength(1));
+      expect(await repository.getForChallenge('challenge_3'), isEmpty);
     });
 
-    test('getForPlayer filters by player and season', () async {
+    test('getForPlayer filters by player and challenge', () async {
       await logGym();
       await logGym(playerId: 'player_2');
 
       final mine = await repository.getForPlayer(
         playerId: 'player_1',
-        seasonId: 'season_1',
+        challengeId: 'challenge_1',
       );
 
       expect(mine, hasLength(1));
@@ -213,62 +214,97 @@ void main() {
   });
 
   group('SeedData', () {
-    test('builds seven players, one active season and 25 activities', () async {
+    test('builds seven players, two challenges and 31 activities', () async {
       final repositories = SeedData.build(now: DateTime(2026, 9, 29));
       addTearDown(repositories.dispose);
 
       expect(await repositories.players.getAll(), hasLength(7));
 
-      final season = await repositories.seasons.getActiveSeason();
-      expect(season, isNotNull);
-      expect(season!.name, SeedData.seasonName);
-      expect(season.rules, hasLength(5));
-      expect(season.captainId, 'player_1');
+      final challenges = await repositories.challenges.getAll();
+      expect(challenges, hasLength(2));
+      expect(challenges.every((challenge) => challenge.isActive), isTrue);
 
-      expect(await repositories.activities.getAll(), hasLength(25));
+      final big = challenges.first;
+      expect(big.name, SeedData.challengeName);
+      expect(big.rules, hasLength(5));
+      expect(big.ownerId, 'player_1');
+      expect(big.memberIds, hasLength(7));
+      expect(big.joinCode, SeedData.joinCode);
+
+      final small = challenges.last;
+      expect(small.name, SeedData.secondChallengeName);
+      expect(small.rules, hasLength(5));
+      expect(small.ownerId, 'player_2');
+      expect(small.memberIds, ['player_2', 'player_3', 'player_4']);
+      expect(small.joinCode, SeedData.secondJoinCode);
+
+      expect(await repositories.activities.getAll(), hasLength(31));
     });
 
-    test('every seeded activity scores and sits in the season', () async {
+    test('both seeded join codes are real join codes', () async {
+      expect(JoinCode.isValid(SeedData.joinCode), isTrue);
+      expect(JoinCode.isValid(SeedData.secondJoinCode), isTrue);
+      expect(SeedData.joinCode, isNot(SeedData.secondJoinCode));
+    });
+
+    test('every seeded activity scores and sits in its own challenge',
+        () async {
       final repositories = SeedData.build(now: DateTime(2026, 9, 29));
       addTearDown(repositories.dispose);
 
-      final season = (await repositories.seasons.getActiveSeason())!;
+      final challenges = await repositories.challenges.getAll();
       final activities = await repositories.activities.getAll();
 
       for (final activity in activities) {
+        final challenge = challenges.firstWhere(
+          (one) => one.id == activity.challengeId,
+        );
         expect(activity.points, greaterThan(0), reason: activity.ruleName);
-        expect(activity.seasonId, season.id);
-        expect(season.ruleById(activity.ruleId), isNotNull);
-        expect(season.containsDate(activity.date), isTrue);
+        expect(challenge.ruleById(activity.ruleId), isNotNull);
+        expect(challenge.containsDate(activity.date), isTrue);
+        expect(challenge.isMember(activity.playerId), isTrue);
       }
     });
 
-    test('the seeded season is active and locked', () async {
+    test('the two challenges share no rule id', () async {
+      // Review finding M1: an activity stores its ruleId, and ruleById looks it
+      // up by id alone, so a shared rule_1 would resolve to the wrong rule.
       final repositories = SeedData.build(now: DateTime(2026, 9, 29));
       addTearDown(repositories.dispose);
 
-      final season = (await repositories.seasons.getActiveSeason())!;
+      final challenges = await repositories.challenges.getAll();
+      final ruleIds = challenges
+          .expand((challenge) => challenge.rules)
+          .map((rule) => rule.id)
+          .toList();
 
-      expect(season.isActive, isTrue);
-      expect(season.isLocked, isTrue);
+      expect(ruleIds, hasLength(10));
+      expect(ruleIds.toSet(), hasLength(10));
+    });
+
+    test('a new rule id carries on past the seeded ones', () async {
+      final repositories = SeedData.build(now: DateTime(2026, 9, 29));
+      addTearDown(repositories.dispose);
+
+      expect(repositories.challenges.nextRuleId(), 'rule_11');
     });
 
     test('a new log carries on from the seeded ids', () async {
       final repositories = SeedData.build(now: DateTime(2026, 9, 29));
       addTearDown(repositories.dispose);
 
-      final season = (await repositories.seasons.getActiveSeason())!;
-      final rule = season.rules.firstWhere((rule) => rule.name == 'Cycling');
+      final challenge = (await repositories.challenges.getAll()).first;
+      final rule = challenge.rules.firstWhere((rule) => rule.name == 'Cycling');
 
       final activity = await repositories.activities.log(
         playerId: 'player_1',
-        seasonId: season.id,
+        challengeId: challenge.id,
         rule: rule,
         date: DateTime(2026, 9, 29),
         input: const ActivityInput(durationMinutes: 60),
       );
 
-      expect(activity.id, 'activity_26');
+      expect(activity.id, 'activity_32');
       expect(activity.points, 2);
     });
 
