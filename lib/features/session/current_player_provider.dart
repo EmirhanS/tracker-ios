@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers.dart';
 import '../../domain/models/player.dart';
-import '../../domain/models/season.dart';
+import '../../domain/models/challenge.dart';
 
 /// Who is using the app.
 ///
@@ -28,31 +28,31 @@ final isSignedInProvider = Provider<bool>((ref) {
   return ref.watch(currentPlayerProvider) != null;
 });
 
-/// The season that decides who the captain is.
+/// The challenge that decides who the owner is.
 ///
-/// The running season if there is one, otherwise the newest season set up.
-Season? _captainSeason(List<Season> seasons) {
-  Season? newest;
-  for (final season in seasons) {
-    if (season.isActive) return season;
-    if (newest == null || season.startDate.isAfter(newest.startDate)) {
-      newest = season;
+/// The running challenge if there is one, otherwise the newest challenge set up.
+Challenge? _ownerChallenge(List<Challenge> challenges) {
+  Challenge? newest;
+  for (final challenge in challenges) {
+    if (challenge.isActive) return challenge;
+    if (newest == null || challenge.startDate.isAfter(newest.startDate)) {
+      newest = challenge;
     }
   }
   return newest;
 }
 
-/// True when the current player may set up a season.
+/// True when the current player may set up a challenge.
 ///
-/// The captain of the current season may. When no season has ever been set up,
+/// The owner of the current challenge may. When no challenge has ever been set up,
 /// anybody may, so a fresh team is not locked out.
-final isCaptainProvider = Provider<bool>((ref) {
+final isOwnerProvider = Provider<bool>((ref) {
   final player = ref.watch(currentPlayerProvider);
   if (player == null) return false;
 
-  final seasons = ref.watch(seasonsProvider).value;
-  if (seasons == null || seasons.isEmpty) return true;
+  final challenges = ref.watch(challengesProvider).value;
+  if (challenges == null || challenges.isEmpty) return true;
 
-  final season = _captainSeason(seasons);
-  return season == null || season.captainId == player.id;
+  final challenge = _ownerChallenge(challenges);
+  return challenge == null || challenge.ownerId == player.id;
 });

@@ -9,11 +9,11 @@ import '../../domain/models/scoring_rule.dart';
 abstract interface class ActivityRepository {
   Future<List<Activity>> getAll();
 
-  Future<List<Activity>> getForSeason(String seasonId);
+  Future<List<Activity>> getForChallenge(String challengeId);
 
   Future<List<Activity>> getForPlayer({
     required String playerId,
-    required String seasonId,
+    required String challengeId,
   });
 
   /// Scores [input] against [rule] and stores the result.
@@ -22,7 +22,7 @@ abstract interface class ActivityRepository {
   /// `PointsEngine.calculate` first to show the reason in the form.
   Future<Activity> log({
     required String playerId,
-    required String seasonId,
+    required String challengeId,
     required ScoringRule rule,
     required DateTime date,
     required ActivityInput input,
