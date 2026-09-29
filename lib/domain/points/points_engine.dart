@@ -6,7 +6,7 @@ sealed class PointsError {
   const PointsError();
 }
 
-/// The rule is switched off in the season.
+/// The rule is switched off in the challenge.
 final class RuleDisabled extends PointsError {
   const RuleDisabled();
 

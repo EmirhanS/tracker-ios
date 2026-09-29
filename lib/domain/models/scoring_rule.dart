@@ -176,7 +176,7 @@ final class DistanceTierScoring extends Scoring {
   String toString() => 'DistanceTierScoring(tiers: $tiers)';
 }
 
-/// One scoring rule inside a season, for example "Running" or "Gym session".
+/// One scoring rule inside a challenge, for example "Running" or "Gym session".
 class ScoringRule {
   const ScoringRule({
     required this.id,
@@ -192,7 +192,7 @@ class ScoringRule {
   /// Shown next to the name. Optional, purely decorative.
   final String? emoji;
 
-  /// Disabled rules stay in the season but cannot be logged against.
+  /// Disabled rules stay in the challenge but cannot be logged against.
   final bool isEnabled;
 
   final Scoring scoring;
