@@ -1,44 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sporttracker/app.dart';
 import 'package:sporttracker/core/clock.dart';
 import 'package:sporttracker/data/in_memory/id_generator.dart';
 import 'package:sporttracker/data/in_memory/in_memory_activity_repository.dart';
 import 'package:sporttracker/data/in_memory/in_memory_player_repository.dart';
-import 'package:sporttracker/data/in_memory/in_memory_season_repository.dart';
+import 'package:sporttracker/data/in_memory/in_memory_challenge_repository.dart';
 import 'package:sporttracker/data/providers.dart';
 import 'package:sporttracker/domain/models/activity.dart';
 import 'package:sporttracker/domain/models/player.dart';
 import 'package:sporttracker/domain/models/scoring_rule.dart';
-import 'package:sporttracker/domain/models/season.dart';
+import 'package:sporttracker/domain/models/challenge.dart';
 
 import 'app_harness.dart';
+import 'doubles/scripted_join_code_generator.dart';
 
 /// The three repositories a test drives the app with.
 class TestWorld {
   const TestWorld({
     required this.players,
-    required this.seasons,
+    required this.challenges,
     required this.activities,
   });
 
   final InMemoryPlayerRepository players;
-  final InMemorySeasonRepository seasons;
+  final InMemoryChallengeRepository challenges;
   final InMemoryActivityRepository activities;
 
   void dispose() {
     players.dispose();
-    seasons.dispose();
+    challenges.dispose();
     activities.dispose();
   }
 
-  /// Everything [playerId] has logged in [Fixture.seasonId], newest first is
+  /// Everything [playerId] has logged in [Fixture.challengeId], newest first is
   /// not guaranteed — this is the raw store, for exact assertions.
   Future<List<Activity>> activitiesOf(String playerId) =>
-      activities.getForPlayer(playerId: playerId, seasonId: Fixture.seasonId);
+      activities.getForPlayer(playerId: playerId, challengeId: Fixture.challengeId);
 
-  /// The points [playerId] holds in [Fixture.seasonId].
+  /// The points [playerId] holds in [Fixture.challengeId].
   Future<int> pointsOf(String playerId) async {
     final mine = await activitiesOf(playerId);
     return mine.fold<int>(0, (total, activity) => total + activity.points);
@@ -80,12 +82,12 @@ abstract final class Fixture {
   /// A day well before the two weeks above.
   static final DateTime earlier = DateTime(2026, 9, 20);
 
-  static final DateTime seasonStart = DateTime(2026, 9, 1);
-  static final DateTime seasonEnd = DateTime(2026, 12, 31);
+  static final DateTime challengeStart = DateTime(2026, 9, 1);
+  static final DateTime challengeEnd = DateTime(2026, 12, 31);
 
   // ------------------------------------------------------------------- rules
 
-  static const String seasonId = 'season_1';
+  static const String challengeId = 'challenge_1';
 
   /// Fixed points with a minimum duration: asks for a duration.
   static const ScoringRule gym = ScoringRule(
@@ -156,7 +158,7 @@ abstract final class Fixture {
 
   // ----------------------------------------------------------------- players
 
-  /// The captain, and the player most screen tests sign in as. 17 points.
+  /// The owner, and the player most screen tests sign in as. 17 points.
   static const Player mira = Player(id: 'player_1', name: 'Mira Sol');
 
   /// Ties with [mira] on 17 points, and sorts before her by name even though
@@ -171,21 +173,119 @@ abstract final class Fixture {
 
   static const List<Player> players = [mira, ben, cleo, dana];
 
-  // ---------------------------------------------------------------- seasons
+  // ---------------------------------------------------------------- challenges
 
-  static Season season({SeasonStatus status = SeasonStatus.active}) => Season(
-        id: seasonId,
-        name: 'Test Season',
-        startDate: seasonStart,
-        endDate: seasonEnd,
-        captainId: mira.id,
+  /// The join code of [challenge]. Six characters, all in the alphabet.
+  static const String joinCode = 'TESTER';
+
+  /// The challenge every screen test runs on, with all four players in it.
+  static Challenge challenge({
+    ChallengeStatus status = ChallengeStatus.active,
+    List<String>? memberIds,
+  }) =>
+      Challenge(
+        id: challengeId,
+        name: 'Test Challenge',
+        startDate: challengeStart,
+        endDate: challengeEnd,
+        ownerId: mira.id,
+        joinCode: joinCode,
+        memberIds:
+            memberIds ?? [for (final player in players) player.id],
         status: status,
         rules: rules,
       );
 
+  // ------------------------------------------------- the second challenge
+  //
+  // A player can be in several challenges at once in v2, so the switcher, the
+  // scoped leaderboard and the join flow all need a second one to be about.
+  // [ben] owns it and [mira] is in it; [cleo] and [dana] are in the first one
+  // only, which is what makes "this table is members of *this* challenge"
+  // something a test can see.
+
+  static const String secondChallengeId = 'challenge_2';
+
+  /// Six characters, all in the join code alphabet — no O and no I.
+  static const String secondJoinCode = 'GYMBUD';
+
+  static const String secondChallengeName = 'Gym Buddies';
+
+  /// Rule ids carry on from [rules]: they are unique across every challenge.
+  static const ScoringRule secondGym = ScoringRule(
+    id: 'rule_6',
+    name: 'Gym session',
+    emoji: '🏋️',
+    scoring: FixedScoring(points: 3, minDurationMinutes: 45),
+  );
+
+  static const ScoringRule secondRowing = ScoringRule(
+    id: 'rule_7',
+    name: 'Rowing',
+    emoji: '🚣',
+    scoring: FixedScoring(points: 2),
+  );
+
+  static const List<ScoringRule> secondRules = [secondGym, secondRowing];
+
+  static Challenge secondChallenge({
+    ChallengeStatus status = ChallengeStatus.active,
+    List<String>? memberIds,
+  }) =>
+      Challenge(
+        id: secondChallengeId,
+        name: secondChallengeName,
+        startDate: challengeStart,
+        endDate: challengeEnd,
+        ownerId: ben.id,
+        joinCode: secondJoinCode,
+        memberIds: memberIds ?? [ben.id, mira.id],
+        status: status,
+        rules: secondRules,
+      );
+
+  /// What is logged in the second challenge. Ben **6**, Mira **3**.
+  static List<Activity> get secondChallengeActivities => [
+        _activity(
+          'activity_16',
+          mira,
+          secondGym,
+          weekWednesday,
+          minutes: 60,
+          points: 3,
+          challengeId: secondChallengeId,
+        ),
+        _activity(
+          'activity_17',
+          ben,
+          secondGym,
+          weekWednesday,
+          minutes: 60,
+          points: 3,
+          challengeId: secondChallengeId,
+        ),
+        _activity(
+          'activity_18',
+          ben,
+          secondRowing,
+          weekMonday,
+          points: 3,
+          challengeId: secondChallengeId,
+        ),
+      ];
+
+  /// Both challenges' activities, for a test that switches between them.
+  static List<Activity> get bothChallengeActivities => [
+        ...activities,
+        ...secondChallengeActivities,
+      ];
+
+  static const int miraSecondChallengePoints = 3;
+  static const int benSecondChallengePoints = 6;
+
   // -------------------------------------------------------------- activities
 
-  /// Mira's six activities. Season total **17**, this week **9**.
+  /// Mira's six activities. Challenge total **17**, this week **9**.
   ///
   /// The first four sit on the week boundaries: Mon 5 Oct 00:00 and Sun 11 Oct
   /// 23:59 are inside the week, Sun 4 Oct 23:59 and Mon 28 Sep are outside it.
@@ -205,7 +305,7 @@ abstract final class Fixture {
         _activity('activity_6', mira, stretching, earlier, points: 2),
       ];
 
-  /// Ben's six activities. Season total **17**, tying with Mira.
+  /// Ben's six activities. Challenge total **17**, tying with Mira.
   static List<Activity> get benActivities => [
         _activity(
           'activity_7',
@@ -251,7 +351,7 @@ abstract final class Fixture {
         ),
       ];
 
-  /// Cleo's three activities. Season total **9**.
+  /// Cleo's three activities. Challenge total **9**.
   static List<Activity> get cleoActivities => [
         _activity(
           'activity_13',
@@ -285,15 +385,15 @@ abstract final class Fixture {
         ...cleoActivities,
       ];
 
-  /// Mira's points over the whole season.
-  static const int miraSeasonPoints = 17;
+  /// Mira's points over the whole challenge.
+  static const int miraChallengePoints = 17;
 
   /// Mira's points in the Monday-to-Sunday week that contains [now].
   static const int miraWeekPoints = 9;
 
-  static const int benSeasonPoints = 17;
-  static const int cleoSeasonPoints = 9;
-  static const int danaSeasonPoints = 0;
+  static const int benChallengePoints = 17;
+  static const int cleoChallengePoints = 9;
+  static const int danaChallengePoints = 0;
 
   static Activity _activity(
     String id,
@@ -303,11 +403,12 @@ abstract final class Fixture {
     required int points,
     int? minutes,
     double? km,
+    String challengeId = Fixture.challengeId,
   }) {
     return Activity(
       id: id,
       playerId: player.id,
-      seasonId: seasonId,
+      challengeId: challengeId,
       ruleId: rule.id,
       ruleName: rule.name,
       ruleEmoji: rule.emoji,
@@ -322,15 +423,26 @@ abstract final class Fixture {
   }
 }
 
+/// The codes a test world hands out when a challenge is created in it.
+///
+/// Fresh each call, because a [ScriptedJoinCodeGenerator] counts through its
+/// list. None of them is [Fixture.joinCode], so a created challenge never looks
+/// like the fixture one.
+List<String> scriptedJoinCodes() => ['AAAAAA', 'BBBBBB', 'CCCCCC', 'DDDDDD'];
+
 /// Starts the app on [Fixture]'s world.
 ///
-/// [seasons] and [activities] default to the full fixture. Pass `const []` for
-/// a team that has no season yet, or a draft season to start setup part way in.
+/// [challenges] and [activities] default to the full fixture. Pass `const []` for
+/// a team that has no challenge yet, or a draft challenge to start setup part way in.
+///
+/// [challengeRepository] replaces the challenge store outright, for a test that
+/// needs one that refuses a write. It takes the place of [challenges].
 Future<TestWorld> pumpWorld(
   WidgetTester tester, {
   List<Player> players = Fixture.players,
-  List<Season>? seasons,
+  List<Challenge>? challenges,
   List<Activity>? activities,
+  InMemoryChallengeRepository? challengeRepository,
   DateTime? now,
 }) async {
   final today = now ?? Fixture.now;
@@ -338,9 +450,11 @@ Future<TestWorld> pumpWorld(
 
   final world = TestWorld(
     players: InMemoryPlayerRepository(players),
-    seasons: InMemorySeasonRepository(
-      seasons: seasons ?? [Fixture.season()],
-      idGenerator: IdGenerator(start: seasons?.length ?? 1),
+    challenges: challengeRepository ??
+        InMemoryChallengeRepository(
+      challenges: challenges ?? [Fixture.challenge()],
+      idGenerator: IdGenerator(start: challenges?.length ?? 1),
+      joinCodeGenerator: ScriptedJoinCodeGenerator(scriptedJoinCodes()),
     ),
     activities: InMemoryActivityRepository(
       activities: seeded,
@@ -356,14 +470,19 @@ Future<TestWorld> pumpWorld(
   return world;
 }
 
-/// Puts one screen on the tree, without the router or the tab shell.
+/// Puts one screen on the tree, without the app's own router or the tab shell.
 ///
-/// Used where the router's own guards make a state unreachable by tapping but
-/// the screen still has to behave — an active season's rules, for instance.
+/// Used where the app's guards make a state unreachable by tapping but the
+/// screen still has to behave — the rules of a running challenge, for instance.
+///
+/// The screen is pushed on top of a blank host inside a throwaway [GoRouter],
+/// not dropped in as `MaterialApp.home`: these screens call `context.pop()` when
+/// a save lands, which needs both a router in the tree and something underneath
+/// to pop back to.
 Future<TestWorld> pumpScreen(
   WidgetTester tester,
   Widget screen, {
-  List<Season>? seasons,
+  List<Challenge>? challenges,
   List<Activity>? activities,
   DateTime? now,
 }) async {
@@ -372,9 +491,10 @@ Future<TestWorld> pumpScreen(
 
   final world = TestWorld(
     players: InMemoryPlayerRepository(Fixture.players),
-    seasons: InMemorySeasonRepository(
-      seasons: seasons ?? [Fixture.season()],
-      idGenerator: IdGenerator(start: seasons?.length ?? 1),
+    challenges: InMemoryChallengeRepository(
+      challenges: challenges ?? [Fixture.challenge()],
+      idGenerator: IdGenerator(start: challenges?.length ?? 1),
+      joinCodeGenerator: ScriptedJoinCodeGenerator(scriptedJoinCodes()),
     ),
     activities: InMemoryActivityRepository(
       activities: seeded,
@@ -384,7 +504,23 @@ Future<TestWorld> pumpScreen(
   );
   addTearDown(world.dispose);
 
-  await tester.pumpWidget(_scope(world, today, MaterialApp(home: screen)));
+  final router = GoRouter(
+    initialLocation: '/host/screen',
+    routes: [
+      GoRoute(
+        path: '/host',
+        builder: (context, state) => const Scaffold(body: SizedBox.shrink()),
+        routes: [
+          GoRoute(path: 'screen', builder: (context, state) => screen),
+        ],
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    _scope(world, today, MaterialApp.router(routerConfig: router)),
+  );
   await settle(tester);
 
   return world;
@@ -396,7 +532,7 @@ ProviderScope _scope(TestWorld world, DateTime today, Widget child) {
   return ProviderScope(
     overrides: [
       playerRepositoryProvider.overrideWithValue(world.players),
-      seasonRepositoryProvider.overrideWithValue(world.seasons),
+      challengeRepositoryProvider.overrideWithValue(world.challenges),
       activityRepositoryProvider.overrideWithValue(world.activities),
       clockProvider.overrideWithValue(() => today),
     ],
