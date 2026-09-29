@@ -1,14 +1,17 @@
-/// Thrown when something tries to change a season that is already running.
+/// Thrown when something tries to move the dates of a running challenge.
 ///
-/// The rules of an active season are locked so that points already earned keep
-/// their meaning.
-class SeasonLockedException implements Exception {
-  const SeasonLockedException(this.seasonId);
+/// The rules and the name of a running challenge are the owner's to change:
+/// `Activity` freezes its own points at log time, so a later rule edit never
+/// moves a score anybody has already earned. The dates are different. Moving
+/// them would push activities that are already logged outside the challenge
+/// they belong to, so they are fixed from the moment it starts.
+class ChallengeLockedException implements Exception {
+  const ChallengeLockedException(this.challengeId);
 
-  final String seasonId;
+  final String challengeId;
 
   @override
-  String toString() => 'SeasonLockedException(seasonId: $seasonId)';
+  String toString() => 'ChallengeLockedException(challengeId: $challengeId)';
 }
 
 /// Thrown when a repository is asked for something that is not there.

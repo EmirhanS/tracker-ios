@@ -7,9 +7,9 @@ class IdGenerator {
 
   int _next;
 
-  /// Returns the next id with [prefix], for example `season_3`.
+  /// Returns the next id with [prefix], for example `challenge_3`.
   String next(String prefix) => '${prefix}_${++_next}';
 
-  /// A function that always uses [prefix], for `SeasonTemplate.buildRules`.
+  /// A function that always uses [prefix], for `ChallengeTemplate.buildRules`.
   String Function() forPrefix(String prefix) => () => next(prefix);
 }

@@ -17,7 +17,7 @@ void main() {
     ProviderScope(
       overrides: [
         playerRepositoryProvider.overrideWithValue(repositories.players),
-        seasonRepositoryProvider.overrideWithValue(repositories.seasons),
+        challengeRepositoryProvider.overrideWithValue(repositories.challenges),
         activityRepositoryProvider.overrideWithValue(repositories.activities),
       ],
       child: const SportTrackerApp(),

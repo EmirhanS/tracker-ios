@@ -53,6 +53,7 @@ LOCALAPPDATA="$USERPROFILE\\AppData\\Local" flutter test
 | --------------- | ----------------------------------------------------------- |
 | `lib/core`      | Router, strings, theme, shared widgets                      |
 | `lib/domain`    | Plain Dart models, points engine, validators, templates     |
+| `lib/data`      | Repository interfaces, in-memory implementations, providers |
 | `lib/features`  | One folder per screen or flow                               |
 | `test/`         | Unit tests for the domain and the data layer                |
 
