@@ -72,10 +72,10 @@ void main() {
         Fixture.dana.name, // 0
       ]);
 
-      expect(_pointsOf(tester, Fixture.ben.name), Fixture.benSeasonPoints);
-      expect(_pointsOf(tester, Fixture.mira.name), Fixture.miraSeasonPoints);
-      expect(_pointsOf(tester, Fixture.cleo.name), Fixture.cleoSeasonPoints);
-      expect(_pointsOf(tester, Fixture.dana.name), Fixture.danaSeasonPoints);
+      expect(_pointsOf(tester, Fixture.ben.name), Fixture.benChallengePoints);
+      expect(_pointsOf(tester, Fixture.mira.name), Fixture.miraChallengePoints);
+      expect(_pointsOf(tester, Fixture.cleo.name), Fixture.cleoChallengePoints);
+      expect(_pointsOf(tester, Fixture.dana.name), Fixture.danaChallengePoints);
     });
 
     testWidgets('a player who has logged nothing is still on the table',
@@ -87,12 +87,12 @@ void main() {
       expect(_rankOf(tester, Fixture.dana.name), 4);
     });
 
-    testWidgets('the signed-in player and the captain are tagged',
+    testWidgets('the signed-in player and the owner are tagged',
         (tester) async {
       await openLeaderboard(tester, playerName: Fixture.cleo.name);
 
       expect(find.text(AppStrings.leaderboardYou), findsOneWidget);
-      expect(find.text(AppStrings.leaderboardCaptain), findsOneWidget);
+      expect(find.text(AppStrings.leaderboardOwner), findsOneWidget);
       expect(
         find.descendant(
           of: _rowOf(Fixture.cleo.name),
@@ -100,11 +100,11 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Mira is the captain of the fixture season.
+      // Mira is the owner of the fixture challenge.
       expect(
         find.descendant(
           of: _rowOf(Fixture.mira.name),
-          matching: find.text(AppStrings.leaderboardCaptain),
+          matching: find.text(AppStrings.leaderboardOwner),
         ),
         findsOneWidget,
       );
