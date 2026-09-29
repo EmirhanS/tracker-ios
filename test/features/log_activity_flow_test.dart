@@ -85,7 +85,7 @@ void main() {
         );
       }
 
-      // Swimming is switched off in the season.
+      // Swimming is switched off in the challenge.
       expect(Fixture.swimming.isEnabled, isFalse);
       expect(find.text(_label(Fixture.swimming)), findsNothing);
       expect(find.text(Fixture.swimming.name), findsNothing);
@@ -277,7 +277,7 @@ void main() {
   });
 
   group('The date field', () {
-    testWidgets('opens a picker inside the season', (tester) async {
+    testWidgets('opens a picker inside the challenge', (tester) async {
       await openLog(tester);
 
       await tester.tap(find.byIcon(Icons.calendar_today));
@@ -287,14 +287,14 @@ void main() {
       expect(find.byType(DatePickerDialog), findsOneWidget);
     });
 
-    testWidgets('a season that has not begun yet does not crash the screen',
+    testWidgets('a challenge that has not begun yet does not crash the screen',
         (tester) async {
-      // Nothing stops a captain from starting a season dated next month, and
+      // Nothing stops an owner from starting a challenge dated next month, and
       // then there is no day between its start and today to offer.
       await pumpWorld(
         tester,
-        seasons: [
-          Fixture.season().copyWith(
+        challenges: [
+          Fixture.challenge().copyWith(
             startDate: DateTime(2026, 11, 1),
             endDate: DateTime(2027, 2, 1),
           ),
@@ -305,7 +305,7 @@ void main() {
       await tester.tap(find.text(AppStrings.navLog));
       await settle(tester);
 
-      expect(find.text(AppStrings.logDateOutsideSeason), findsOneWidget);
+      expect(find.text(AppStrings.logDateOutsideChallenge), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.calendar_today));
       await settle(tester);
@@ -369,7 +369,7 @@ void main() {
 
       // Stretching is worth 2, and today is inside the current week.
       expect(
-        find.text('${Fixture.miraSeasonPoints + 2}'),
+        find.text('${Fixture.miraChallengePoints + 2}'),
         findsOneWidget,
       );
       expect(find.text('${Fixture.miraWeekPoints + 2}'), findsOneWidget);
