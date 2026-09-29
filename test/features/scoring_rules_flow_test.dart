@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sporttracker/core/strings/app_strings.dart';
 import 'package:sporttracker/domain/models/scoring_rule.dart';
-import 'package:sporttracker/domain/models/season.dart';
-import 'package:sporttracker/features/season/scoring_rules_screen.dart';
+import 'package:sporttracker/domain/models/challenge.dart';
+import 'package:sporttracker/features/challenge/scoring_rules_screen.dart';
 
 import '../app_harness.dart';
 import '../fixtures.dart';
@@ -12,9 +12,9 @@ import '../fixtures.dart';
 Future<TestWorld> openScoringRules(
   WidgetTester tester,
   String playerName, {
-  List<Season>? seasons,
+  List<Challenge>? challenges,
 }) async {
-  final world = await pumpWorld(tester, seasons: seasons);
+  final world = await pumpWorld(tester, challenges: challenges);
   await signIn(tester, playerName);
   await tester.tap(find.byIcon(Icons.rule));
   await settle(tester);
@@ -29,14 +29,14 @@ Finder _tileOf(ScoringRule rule) => find.ancestor(
 
 void main() {
   group('Everyone can read the rules', () {
-    testWidgets('the captain can open the screen', (tester) async {
+    testWidgets('the owner can open the screen', (tester) async {
       await openScoringRules(tester, Fixture.mira.name);
 
       expect(find.text(AppStrings.scoringRulesTitle), findsOneWidget);
       expect(find.byType(ScoringRuleTile), findsNWidgets(Fixture.rules.length));
     });
 
-    testWidgets('a player who is not the captain can too', (tester) async {
+    testWidgets('a player who is not the owner can too', (tester) async {
       await openScoringRules(tester, Fixture.ben.name);
 
       expect(find.text(AppStrings.scoringRulesTitle), findsOneWidget);
@@ -46,10 +46,10 @@ void main() {
       }
     });
 
-    testWidgets('the season it belongs to is named', (tester) async {
+    testWidgets('the challenge it belongs to is named', (tester) async {
       await openScoringRules(tester, Fixture.dana.name);
 
-      expect(find.textContaining('Test Season'), findsOneWidget);
+      expect(find.textContaining('Test Challenge'), findsOneWidget);
     });
   });
 
@@ -58,12 +58,12 @@ void main() {
         (tester) async {
       await openScoringRules(tester, Fixture.mira.name);
 
-      // Not even the captain gets an edit affordance here: the rules of a
-      // running season are locked, and setup is where rules are changed.
+      // Not even the owner gets an edit affordance here: the rules of a
+      // running challenge are locked, and setup is where rules are changed.
       expect(find.byType(Switch), findsNothing);
       expect(find.byIcon(Icons.chevron_right), findsNothing);
-      expect(find.text(AppStrings.seasonRulesAdd), findsNothing);
-      expect(find.text(AppStrings.seasonRuleDelete), findsNothing);
+      expect(find.text(AppStrings.challengeRulesAdd), findsNothing);
+      expect(find.text(AppStrings.challengeRuleDelete), findsNothing);
 
       final tiles = tester.widgetList<ScoringRuleTile>(
         find.byType(ScoringRuleTile),
@@ -73,7 +73,7 @@ void main() {
       }
     });
 
-    testWidgets('a non-captain sees exactly the same screen', (tester) async {
+    testWidgets('a non-owner sees exactly the same screen', (tester) async {
       await openScoringRules(tester, Fixture.ben.name);
 
       expect(find.byType(Switch), findsNothing);
@@ -156,20 +156,20 @@ void main() {
   });
 
   group('Empty states', () {
-    testWidgets('no season at all', (tester) async {
-      await pumpWorld(tester, seasons: const [], activities: const []);
+    testWidgets('no challenge at all', (tester) async {
+      await pumpWorld(tester, challenges: const [], activities: const []);
       await signIn(tester, Fixture.mira.name);
       await tester.tap(find.byIcon(Icons.rule));
       await settle(tester);
 
-      expect(find.text(AppStrings.dashboardNoSeasonTitle), findsOneWidget);
+      expect(find.text(AppStrings.dashboardNoChallengeTitle), findsOneWidget);
       expect(find.byType(ScoringRuleTile), findsNothing);
     });
 
-    testWidgets('a season with no rules', (tester) async {
+    testWidgets('a challenge with no rules', (tester) async {
       await pumpWorld(
         tester,
-        seasons: [Fixture.season().copyWith(rules: const [])],
+        challenges: [Fixture.challenge().copyWith(rules: const [])],
         activities: const [],
       );
       await signIn(tester, Fixture.mira.name);

@@ -3,7 +3,7 @@ import 'package:sporttracker/core/strings/app_strings.dart';
 import 'package:sporttracker/core/widgets/activity_tile.dart';
 import 'package:sporttracker/core/widgets/points_chip.dart';
 import 'package:sporttracker/domain/models/activity.dart';
-import 'package:sporttracker/domain/models/season.dart';
+import 'package:sporttracker/domain/models/challenge.dart';
 
 import '../app_harness.dart';
 import '../fixtures.dart';
@@ -26,16 +26,16 @@ List<Activity> _miraWithout(Set<String> ids) => [
 
 void main() {
   group('Dashboard totals', () {
-    testWidgets('season points is the sum of every activity in the season',
+    testWidgets('challenge points is the sum of every activity in the challenge',
         (tester) async {
       final world = await pumpWorld(tester);
       await signIn(tester, Fixture.mira.name);
 
-      // 3 + 3 + 3 + 2 + 4 + 2, over the whole season.
-      expect(await world.pointsOf(Fixture.mira.id), Fixture.miraSeasonPoints);
+      // 3 + 3 + 3 + 2 + 4 + 2, over the whole challenge.
+      expect(await world.pointsOf(Fixture.mira.id), Fixture.miraChallengePoints);
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints}',
       );
     });
 
@@ -43,7 +43,7 @@ void main() {
       await pumpWorld(tester);
       await signIn(tester, Fixture.dana.name);
 
-      expect(_statValue(tester, AppStrings.dashboardSeasonPoints), '0');
+      expect(_statValue(tester, AppStrings.dashboardChallengePoints), '0');
       expect(_statValue(tester, AppStrings.dashboardWeekPoints), '0');
       expect(find.text(AppStrings.dashboardNoActivitiesTitle), findsOneWidget);
     });
@@ -64,10 +64,10 @@ void main() {
         _statValue(tester, AppStrings.dashboardWeekPoints),
         '${Fixture.miraWeekPoints}',
       );
-      // The other 8 points are outside the week but still in the season.
+      // The other 8 points are outside the week but still in the challenge.
       expect(
-        _statValue(tester, AppStrings.dashboardSeasonPoints),
-        '${Fixture.miraSeasonPoints}',
+        _statValue(tester, AppStrings.dashboardChallengePoints),
+        '${Fixture.miraChallengePoints}',
       );
     });
 
@@ -105,7 +105,7 @@ void main() {
       await signIn(tester, Fixture.mira.name);
 
       expect(_statValue(tester, AppStrings.dashboardWeekPoints), '0');
-      expect(_statValue(tester, AppStrings.dashboardSeasonPoints), '6');
+      expect(_statValue(tester, AppStrings.dashboardChallengePoints), '6');
     });
   });
 
@@ -146,26 +146,26 @@ void main() {
     });
   });
 
-  group('No active season', () {
-    testWidgets('an empty repository shows the no-season state',
+  group('No active challenge', () {
+    testWidgets('an empty repository shows the no-challenge state',
         (tester) async {
-      await pumpWorld(tester, seasons: const [], activities: const []);
+      await pumpWorld(tester, challenges: const [], activities: const []);
       await signIn(tester, Fixture.mira.name);
 
-      expect(find.text(AppStrings.dashboardNoSeasonTitle), findsOneWidget);
-      expect(find.text(AppStrings.dashboardSeasonPoints), findsNothing);
+      expect(find.text(AppStrings.dashboardNoChallengeTitle), findsOneWidget);
+      expect(find.text(AppStrings.dashboardChallengePoints), findsNothing);
       expect(find.text(AppStrings.dashboardWeekPoints), findsNothing);
     });
 
-    testWidgets('a season still in draft does not count as active',
+    testWidgets('a challenge still in draft does not count as active',
         (tester) async {
       await pumpWorld(
         tester,
-        seasons: [Fixture.season(status: SeasonStatus.draft)],
+        challenges: [Fixture.challenge(status: ChallengeStatus.draft)],
       );
       await signIn(tester, Fixture.mira.name);
 
-      expect(find.text(AppStrings.dashboardNoSeasonTitle), findsOneWidget);
+      expect(find.text(AppStrings.dashboardNoChallengeTitle), findsOneWidget);
       expect(find.byType(ActivityTile), findsNothing);
     });
   });
