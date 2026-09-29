@@ -1,55 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_routes.dart';
 import '../../core/strings/app_strings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/points_chip.dart';
-import '../../data/providers.dart';
+import '../challenge/challenge_switcher.dart';
+import '../challenge/current_challenge_provider.dart';
 import '../session/current_player_provider.dart';
 import 'leaderboard_provider.dart';
 
-/// The team ranked by points in the running season.
+/// The team ranked by points in the running challenge.
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(leaderboardProvider);
-    final season = ref.watch(activeSeasonProvider).value;
+    final challenge = ref.watch(currentChallengeProvider).value;
     final me = ref.watch(currentPlayerProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.leaderboardTitle),
-        bottom: season == null
-            ? null
-            : PreferredSize(
-                preferredSize: const Size.fromHeight(24),
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: AppSpacing.md,
-                    bottom: AppSpacing.sm,
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      season.name,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-              ),
+        // The switcher already names the challenge this table belongs to, so
+        // the old subtitle under the title would only say it twice.
+        actions: [
+          const ChallengeSwitcherButton(),
+          if (challenge != null)
+            IconButton(
+              tooltip: AppStrings.membersTitle,
+              icon: const Icon(Icons.group_outlined),
+              onPressed: () =>
+                  context.push(AppRoutes.challengeMembers(challenge.id)),
+            ),
+        ],
       ),
       body: AsyncView<List<LeaderboardEntry>>(
         value: entries,
         builder: (context, entries) {
-          if (season == null) {
+          if (challenge == null) {
             return const EmptyState(
               icon: Icons.event_busy,
-              title: AppStrings.dashboardNoSeasonTitle,
-              body: AppStrings.dashboardNoSeasonBody,
+              title: AppStrings.dashboardNoChallengeTitle,
+              body: AppStrings.dashboardNoChallengeBody,
             );
           }
           if (entries.every((entry) => entry.points == 0)) {
@@ -67,7 +64,7 @@ class LeaderboardScreen extends ConsumerWidget {
             itemBuilder: (context, index) => _LeaderboardRow(
               entry: entries[index],
               isMe: entries[index].player.id == me?.id,
-              isCaptain: entries[index].player.id == season.captainId,
+              isOwner: entries[index].player.id == challenge.ownerId,
             ),
           );
         },
@@ -80,12 +77,12 @@ class _LeaderboardRow extends StatelessWidget {
   const _LeaderboardRow({
     required this.entry,
     required this.isMe,
-    required this.isCaptain,
+    required this.isOwner,
   });
 
   final LeaderboardEntry entry;
   final bool isMe;
-  final bool isCaptain;
+  final bool isOwner;
 
   @override
   Widget build(BuildContext context) {
@@ -109,9 +106,9 @@ class _LeaderboardRow extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             _Tag(label: AppStrings.leaderboardYou),
           ],
-          if (isCaptain) ...[
+          if (isOwner) ...[
             const SizedBox(width: AppSpacing.sm),
-            _Tag(label: AppStrings.leaderboardCaptain),
+            _Tag(label: AppStrings.leaderboardOwner),
           ],
         ],
       ),
